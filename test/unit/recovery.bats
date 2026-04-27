@@ -7,6 +7,7 @@ setup() {
     source "${JR_REPO_ROOT}/lib/util.sh"
     # shellcheck source=/dev/null
     source "${JR_REPO_ROOT}/lib/recovery.sh"
+    export JR_LSUSB_OUTPUT
 }
 
 @test "find_jetson_devices returns empty when no 0955 present" {

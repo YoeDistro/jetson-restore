@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Install/remove the udev rule for VID 0955.
 #
-# In production, bin/jetson-restore sets JR_FS_WRITER=run_sudo so the file
-# write goes through sudo via the `tee` indirection. In tests, JR_UDEV_DEST is
-# in a temp dir the test user owns, so the direct write succeeds without sudo.
+# JR_FS_WRITER defaults to run_sudo so production file writes go through sudo.
+# Tests set JR_FS_WRITER=run_cmd and point JR_UDEV_DEST at a temp dir the
+# test user owns, so no privilege escalation is required.
 set -euo pipefail
 
 : "${JR_UDEV_DEST:=/etc/udev/rules.d/70-jetson-restore.rules}"
-: "${JR_FS_WRITER:=run_cmd}"
+: "${JR_FS_WRITER:=run_sudo}"
 
 install_udev_rule() {
     local repo="$1" group="$2"

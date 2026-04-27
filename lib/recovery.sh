@@ -20,8 +20,6 @@ find_jetson_devices() {
 wait_for_recovery() {
     local product_id="$1" timeout_s="$2"
     local elapsed=0
-    # Export so the lsusb stub can read JR_LSUSB_OUTPUT from the environment.
-    export JR_LSUSB_OUTPUT
     while ((elapsed < timeout_s)); do
         if find_jetson_devices | awk '{print $2}' | grep -qx "${product_id}"; then
             return 0

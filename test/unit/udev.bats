@@ -9,6 +9,7 @@ setup() {
     source "${JR_REPO_ROOT}/lib/udev.sh"
     JR_UDEV_DEST="${JR_TMPDIR}/etc/udev/rules.d/70-jetson-restore.rules"
     export JR_UDEV_DEST
+    export JR_FS_WRITER=run_cmd
     mkdir -p "$(dirname "${JR_UDEV_DEST}")"
     jr_use_stub sudo
     jr_use_stub udevadm
