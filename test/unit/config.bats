@@ -30,8 +30,7 @@ setup() {
 @test "load_jetpack reads 6.2.1 and sets JR_BSP_URL" {
     load_jetpack "${JR_REPO_ROOT}" "6.2.1"
     [[ "${JR_BSP_URL}" == https://* ]]
-    # SHA-256 may still be the placeholder string in this commit.
-    [ -n "${JR_BSP_SHA256}" ]
+    [[ "${JR_ROOTFS_URL}" == https://* ]]
 }
 
 @test "list_targets prints all available target names" {

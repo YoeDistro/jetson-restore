@@ -33,10 +33,3 @@ Some distros split NFS into multiple services. Try:
     sudo systemctl start nfs-server.service    # Arch/RHEL
 
 If both fail, install nfs-utils (Arch) or nfs-kernel-server (Ubuntu) and re-run.
-
-## "checksum mismatch" on BSP download
-
-NVIDIA occasionally rebuilds tarballs without changing the URL. If you trust the
-source, update the SHA-256 in `jetpacks/<version>.conf` to match `sha256sum` of
-the freshly downloaded file. Open an issue with the new value so we can update
-the pinned config.

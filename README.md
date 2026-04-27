@@ -70,29 +70,28 @@ Run `jetson-restore uninstall` to remove all of the above.
 
 ## Recovery mode
 
-Before running `jetson-restore`, the dev kit must be in forced recovery mode
-and visible on this host's USB bus as `0955:7e19` (Orin Nano) or `0955:7023`
-(AGX Orin). Verify at any time with `lsusb | grep 0955`.
+Before running `jetson-restore`, the dev kit must be in forced recovery mode and
+visible on this host's USB bus as `0955:7e19` (Orin Nano) or `0955:7023` (AGX
+Orin). Verify at any time with `lsusb | grep 0955`.
 
 ### Orin Nano dev kit
 
-**USB port:** the USB-C port on the carrier board (front edge, alongside the
-M.2 NVMe slot). Connect this to a USB port on the host — direct, not through
-a hub.
+**USB port:** the USB-C port on the carrier board (front edge, alongside the M.2
+NVMe slot). Connect this to a USB port on the host — direct, not through a hub.
 
 **Procedure (jumper-based forced recovery):**
 
 1. Disconnect the barrel-jack power so the dev kit is fully off.
-2. Place a jumper across pins **9 and 10** of the **J14 button header**
-   (these are the FC REC and GND pins). Pin 1 is at the corner closest to the
+2. Place a jumper across pins **9 and 10** of the **J14 button header** (these
+   are the FC REC and GND pins). Pin 1 is at the corner closest to the
    carrier-board edge.
 3. Connect a USB-C **data** cable from the carrier board's USB-C port to this
    host.
 4. Reapply power.
 5. Verify: `lsusb | grep '0955:7e19'` should show `NVIDIA Corp. APX`.
 
-The jumper can stay in place during flashing — remove it only when you want
-the device to boot normally afterward.
+The jumper can stay in place during flashing — remove it only when you want the
+device to boot normally afterward.
 
 ### AGX Orin dev kit
 
@@ -105,8 +104,8 @@ try the other front USB-C port).
 1. Connect a USB-C **data** cable from the dev kit's front USB-C port to this
    host.
 2. Power the dev kit off, or press **RESET** and wait for the fans to stop.
-3. Press and **hold** the **FORCE RECOVERY** button (on the side, between
-   POWER and RESET).
+3. Press and **hold** the **FORCE RECOVERY** button (on the side, between POWER
+   and RESET).
 4. While still holding FORCE RECOVERY, press and release the **POWER** button.
 5. Release FORCE RECOVERY after ~2 seconds.
 6. Verify: `lsusb | grep '0955:7023'` should show `NVIDIA Corp. APX`.
@@ -114,10 +113,10 @@ try the other front USB-C port).
 ### Cable matters
 
 Use a known-good USB-C **data** cable. Charge-only USB-C cables silently fail:
-the device will not appear on the USB bus at all and `jetson-restore` will
-time out at the recovery-mode preflight check with no other clue. If a cable
-that worked yesterday stops working today, suspect the cable before suspecting
-the board.
+the device will not appear on the USB bus at all and `jetson-restore` will time
+out at the recovery-mode preflight check with no other clue. If a cable that
+worked yesterday stops working today, suspect the cable before suspecting the
+board.
 
 ## Documentation
 
@@ -132,12 +131,10 @@ the board.
 
 ## Status
 
-**v1 in progress.** The unit test suite (65 bats tests) runs in CI on every
-push. Two tests fail by design until a maintainer fills in the real SHA-256
-values for the JetPack 6.2.1 BSP and rootfs tarballs in
-[`jetpacks/6.2.1.conf`](jetpacks/6.2.1.conf) — that's the forcing function.
-Hardware end-to-end on real Orin Nano + AGX Orin dev kits is gated on
-`JETSON_RESTORE_E2E=1` and run before each release.
+**v1 in progress.** The unit test suite runs in CI on every push. Hardware
+end-to-end on real Orin Nano + AGX Orin dev kits is gated on
+`JETSON_RESTORE_E2E=1` and run before each release. BSP and rootfs downloads
+are trusted via HTTPS to `developer.nvidia.com`; no checksum pinning.
 
 ## License
 

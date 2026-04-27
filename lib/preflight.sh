@@ -23,11 +23,12 @@ _check_subnet_clear() {
 }
 
 _check_one_jetson_only() {
+    local product_id="$1"
     local devices count
-    mapfile -t devices < <(find_jetson_devices)
+    mapfile -t devices < <(find_jetson_devices | awk -v pid="${product_id}" '$2 == pid')
     count="${#devices[@]}"
     if ((count > 1)) && [[ -z "${JR_DEVICE:-}" ]]; then
-        log_die "multiple VID 0955 devices attached; pick one with --device <bus>:<dev>"
+        log_die "multiple VID 0955:${product_id} devices attached; pick one with --device <bus>:<dev>"
     fi
 }
 
@@ -68,7 +69,7 @@ run_preflight() {
     _check_subnet_clear
 
     log_info "preflight: at most one Jetson attached"
-    _check_one_jetson_only
+    _check_one_jetson_only "${JR_USB_PRODUCT_ID}"
 
     log_info "preflight: device in recovery mode"
     _check_recovery_mode "${JR_USB_PRODUCT_ID}"

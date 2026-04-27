@@ -1,3 +1,9 @@
 #!/usr/bin/env bash
 echo "nmcli $*" >>"${JR_STUB_LOG}"
+# Tests can flip this to simulate NM installed but not running (e.g. service
+# stopped, masked, or D-Bus unreachable). nmcli would then exit non-zero on
+# any operation that has to talk to the NM daemon.
+if [[ "${JR_STUB_NMCLI_NOT_RUNNING:-0}" == "1" ]]; then
+    exit 8
+fi
 exit 0

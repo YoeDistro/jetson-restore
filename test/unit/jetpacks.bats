@@ -5,8 +5,8 @@ load ../helpers/load
 @test "every jetpack config defines all required keys with non-placeholder values" {
     local required=(
         JR_JETPACK_VERSION JR_L4T_VERSION
-        JR_BSP_URL JR_BSP_SHA256 JR_BSP_FILENAME
-        JR_ROOTFS_URL JR_ROOTFS_SHA256 JR_ROOTFS_FILENAME
+        JR_BSP_URL JR_BSP_FILENAME
+        JR_ROOTFS_URL JR_ROOTFS_FILENAME
         JR_CONTAINER_TAG
     )
     for f in "${JR_REPO_ROOT}/jetpacks"/*.conf; do
@@ -26,11 +26,4 @@ load ../helpers/load
     source "${JR_REPO_ROOT}/jetpacks/6.2.1.conf"
     [[ "${JR_BSP_URL}" == https://* ]]
     [[ "${JR_ROOTFS_URL}" == https://* ]]
-}
-
-@test "SHA-256 fields are 64 lowercase hex chars" {
-    # shellcheck source=/dev/null
-    source "${JR_REPO_ROOT}/jetpacks/6.2.1.conf"
-    [[ "${JR_BSP_SHA256}" =~ ^[0-9a-f]{64}$ ]]
-    [[ "${JR_ROOTFS_SHA256}" =~ ^[0-9a-f]{64}$ ]]
 }

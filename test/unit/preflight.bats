@@ -75,6 +75,33 @@ setup() {
     [[ "${output}" == *insufficient\ disk\ space* ]]
 }
 
+@test "run_preflight succeeds when target Jetson exposes a second non-recovery 0955 device" {
+    # AGX Orin in recovery mode exposes 0955:7023 (APX) and 0955:7045
+    # (Tegra On-Platform Operator) on the same physical port. The "at most one
+    # Jetson" check must filter by the target's recovery product ID.
+    load_target "${JR_REPO_ROOT}" "agx-orin-devkit"
+    JR_LSUSB_OUTPUT="\
+Bus 001 Device 031: ID 0955:7045 NVIDIA Corp. Tegra On-Platform Operator
+Bus 001 Device 032: ID 0955:7023 NVIDIA Corp. APX"
+    JR_SYSTEMCTL_STATE="active"
+    JR_DF_FREE_KB=$((40 * 1024 * 1024))
+    JR_IP_ROUTE_OUT=""
+    run run_preflight
+    assert_success
+}
+
+@test "run_preflight fails when two Jetsons of the target model are in recovery" {
+    JR_LSUSB_OUTPUT="\
+Bus 003 Device 042: ID 0955:7e19 NVIDIA Corp. APX
+Bus 004 Device 015: ID 0955:7e19 NVIDIA Corp. APX"
+    JR_SYSTEMCTL_STATE="active"
+    JR_DF_FREE_KB=$((40 * 1024 * 1024))
+    JR_IP_ROUTE_OUT=""
+    run run_preflight
+    assert_failure 2
+    [[ "${output}" == *multiple\ VID\ 0955:7e19\ devices* ]]
+}
+
 @test "run_preflight is idempotent on the second invocation" {
     JR_LSUSB_OUTPUT="Bus 003 Device 042: ID 0955:7e19 NVIDIA Corp. APX"
     JR_SYSTEMCTL_STATE="active"

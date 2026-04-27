@@ -6,6 +6,10 @@ set -euo pipefail
 : "${JR_FS_WRITER:=run_sudo}"
 
 _nm_present() { command -v nmcli >/dev/null 2>&1; }
+_nm_running() {
+    _nm_present || return 1
+    nmcli -t general status >/dev/null 2>&1
+}
 
 install_nm_keyfile() {
     local repo="$1" rndis_mac="$2"
@@ -31,14 +35,18 @@ install_nm_keyfile() {
     fi
     printf '%s\n' "${rendered}" | "${JR_FS_WRITER}" tee "${JR_NM_DEST}" >/dev/null
     "${JR_FS_WRITER}" chmod 600 "${JR_NM_DEST}"
-    "${JR_FS_WRITER}" nmcli connection reload
+    if _nm_running; then
+        "${JR_FS_WRITER}" nmcli connection reload
+    else
+        log_warn "NetworkManager not running; skipping 'nmcli connection reload' (keyfile will be loaded on next NM start)"
+    fi
 }
 
 remove_nm_keyfile() {
     if [[ -f "${JR_NM_DEST}" ]]; then
         log_info "removing NM keyfile ${JR_NM_DEST}"
         "${JR_FS_WRITER}" rm -f "${JR_NM_DEST}"
-        if _nm_present; then
+        if _nm_running; then
             "${JR_FS_WRITER}" nmcli connection reload
         fi
     fi

@@ -46,6 +46,23 @@ setup() {
     [ ! -f "${JR_NM_DEST}" ]
 }
 
+@test "install_nm_keyfile installs file but skips reload when NM not running" {
+    JR_STUB_NMCLI_NOT_RUNNING=1 install_nm_keyfile "${JR_REPO_ROOT}" "1a:2b:3c:4d:5e:6f"
+    [ -f "${JR_NM_DEST}" ]
+    grep -q 'mac-address=1a:2b:3c:4d:5e:6f' "${JR_NM_DEST}"
+    jr_read_stub_log
+    [[ "${output}" != *"nmcli connection reload"* ]]
+}
+
+@test "remove_nm_keyfile skips reload when NM not running" {
+    install_nm_keyfile "${JR_REPO_ROOT}" "1a:2b:3c:4d:5e:6f"
+    : >"${JR_STUB_LOG}"
+    JR_STUB_NMCLI_NOT_RUNNING=1 remove_nm_keyfile
+    [ ! -f "${JR_NM_DEST}" ]
+    jr_read_stub_log
+    [[ "${output}" != *"nmcli connection reload"* ]]
+}
+
 @test "install_nm_keyfile is a no-op (warn) when nmcli is absent" {
     # Build a symlink farm that includes core utils but excludes nmcli so that
     # command -v nmcli returns false inside the subshell.
