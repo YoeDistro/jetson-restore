@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+echo "sudo $*" >>"${JR_STUB_LOG}"
+exit 0
