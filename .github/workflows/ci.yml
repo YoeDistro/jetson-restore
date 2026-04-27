@@ -40,3 +40,21 @@ jobs:
           submodules: recursive
       - name: Run unit tests
         run: make test
+
+  container-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build container
+        run: podman build -t jetson-restore:ci -f container/Containerfile container/
+      - name: Smoke-run container
+        run: |
+          # The entrypoint requires args; assert it errors with our message.
+          set +e
+          out="$(podman run --rm jetson-restore:ci 2>&1)"
+          rc=$?
+          set -e
+          if [[ ${rc} -eq 0 ]]; then
+            echo "expected nonzero exit when no args"; exit 1
+          fi
+          [[ "${out}" == *board_id\ required* ]] || { echo "${out}"; exit 1; }
