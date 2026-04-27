@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+echo "chmod $*" >>"${JR_STUB_LOG}"
+# Fall through so file modes actually get set in tests.
+exec /usr/bin/chmod "$@"
