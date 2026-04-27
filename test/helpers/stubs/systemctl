@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+echo "systemctl $*" >>"${JR_STUB_LOG}"
+case "$1" in
+    is-active)
+        printf '%s\n' "${JR_SYSTEMCTL_STATE:-active}"
+        ;;
+esac
+exit 0

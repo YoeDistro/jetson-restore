@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+echo "exportfs $*" >>"${JR_STUB_LOG}"
+exit 0
