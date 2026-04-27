@@ -2,12 +2,14 @@
 
 ## "device not in recovery mode"
 
-You forgot the recovery button combo, or the cable is data-only.
+The recovery-mode procedure (per board) and USB port locations live in the
+top-level README's [Recovery mode](../README.md#recovery-mode) section.
 
-- **Orin Nano dev kit:** jumper pins 9–10 (FC REC + GND) on J14, then power on.
-- **AGX Orin dev kit:** hold FORCE RECOVERY, press POWER, release after ~2 s.
+Quick check: `lsusb | grep 0955`. Two common causes when the board *should* be
+in recovery mode but isn't visible:
 
-Verify with `lsusb | grep 0955`.
+- **Charge-only USB-C cable.** Swap to a known-good data cable.
+- **USB hub between host and dev kit.** Plug directly into the host.
 
 ## "another route exists for 192.168.55.0/24"
 
@@ -17,8 +19,8 @@ flash, or change its subnet.
 
 ## Flash hangs at "Sending bootloader"
 
-USB autosuspend is the usual cause. The udev rule disables it for VID 0955,
-but if you're on a host where udev rules don't apply (some immutable distros),
+USB autosuspend is the usual cause. The udev rule disables it for VID 0955, but
+if you're on a host where udev rules don't apply (some immutable distros),
 disable it globally for the flash:
 
     echo -1 | sudo tee /sys/module/usbcore/parameters/autosuspend
@@ -34,7 +36,7 @@ If both fail, install nfs-utils (Arch) or nfs-kernel-server (Ubuntu) and re-run.
 
 ## "checksum mismatch" on BSP download
 
-NVIDIA occasionally rebuilds tarballs without changing the URL. If you trust
-the source, update the SHA-256 in `jetpacks/<version>.conf` to match
-`sha256sum` of the freshly downloaded file. Open an issue with the new value
-so we can update the pinned config.
+NVIDIA occasionally rebuilds tarballs without changing the URL. If you trust the
+source, update the SHA-256 in `jetpacks/<version>.conf` to match `sha256sum` of
+the freshly downloaded file. Open an issue with the new value so we can update
+the pinned config.
