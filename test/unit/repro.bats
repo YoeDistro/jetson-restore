@@ -20,7 +20,9 @@ setup() {
     do_flash
     jr_read_stub_log
     local actual expected
-    actual="$(printf '%s' "${output}" | sed "s|${JR_WORKDIR}|<WORKDIR>|g")"
+    # Pin only the `run` invocation; pre-checks (image exists/pull/build) are
+    # validated separately in flash.bats.
+    actual="$(printf '%s' "${output}" | grep '^podman run' | sed "s|${JR_WORKDIR}|<WORKDIR>|g")"
     expected="$(cat "${JR_REPO_ROOT}/test/fixtures/expected-orin-nano-argv.txt")"
     assert_equal "${actual}" "${expected}"
 }

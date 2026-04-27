@@ -32,3 +32,25 @@ setup() {
     jr_read_stub_log
     [[ "${output}" == *:6.2.1* ]]
 }
+
+@test "do_flash builds the image locally when registry pull fails" {
+    # Replace the always-success podman stub: fail for 'image exists' (not
+    # present locally) and 'pull' (registry 403); succeed for build/run.
+    local stubs_active="${JR_TMPDIR}/stubs-active"
+    rm -f "${stubs_active}/podman"
+    cat >"${stubs_active}/podman" <<'STUB'
+#!/usr/bin/env bash
+echo "podman $*" >>"${JR_STUB_LOG}"
+case "$1" in
+    image) exit 1 ;;
+    pull)  exit 1 ;;
+    *)     exit 0 ;;
+esac
+STUB
+    chmod +x "${stubs_active}/podman"
+
+    do_flash
+    jr_read_stub_log
+    [[ "${output}" == *podman\ build\ -t\ ghcr.io/cbrake/jetson-restore:* ]]
+    [[ "${output}" == *podman\ run\ --rm* ]]
+}
