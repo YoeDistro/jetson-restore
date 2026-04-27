@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+echo "tee $*" >>"${JR_STUB_LOG}"
+# Behave like real tee for the file argument.
+exec /usr/bin/tee "$@"
