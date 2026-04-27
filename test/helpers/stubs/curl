@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+echo "curl $*" >>"${JR_STUB_LOG}"
+# Find the -o argument.
+out=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -o) out="$2"; shift 2;;
+        *) shift;;
+    esac
+done
+if [[ -n "${out}" ]]; then
+    printf '%s' "${JR_CURL_FAKE_BODY:-}" >"${out}"
+fi
+exit 0
