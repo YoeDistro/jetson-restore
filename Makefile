@@ -18,7 +18,7 @@ lint:
 	$(if $(SHELL_FILES),shfmt -d -i 4 -ci $(SHELL_FILES),@echo "No shell files found; skipping shfmt")
 
 test:
-	bats -r test/unit
+	./test/helpers/bats-core/bin/bats -r test/unit
 
 container:
 	podman build -t jetson-restore:dev -f container/Containerfile container/
