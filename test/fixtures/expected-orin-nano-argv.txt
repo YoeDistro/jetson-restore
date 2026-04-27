@@ -1,1 +1,1 @@
-podman run --rm --privileged --net host -v /dev/bus/usb:/dev/bus/usb -v <WORKDIR>/Linux_for_Tegra:/Linux_for_Tegra ghcr.io/cbrake/jetson-restore:6.2.1 jetson-orin-nano-devkit nvme
+docker run --rm --privileged --net host -v /dev/bus/usb:/dev/bus/usb -v <WORKDIR>/Linux_for_Tegra:/Linux_for_Tegra ghcr.io/cbrake/jetson-restore:6.2.1 jetson-orin-nano-devkit nvme

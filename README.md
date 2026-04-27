@@ -26,8 +26,8 @@ for the design and prior-art survey.
 ## Quick start
 
 1. Install dependencies:
-   - Arch: `sudo pacman -S podman nfs-utils sudo`
-   - Ubuntu: `sudo apt install podman nfs-kernel-server sudo`
+   - Arch: `sudo pacman -S docker nfs-utils sudo`
+   - Ubuntu: `sudo apt install docker.io nfs-kernel-server sudo`
 
 2. Put the dev kit in recovery mode (see [Recovery mode](#recovery-mode) below).
 

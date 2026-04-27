@@ -7,7 +7,7 @@ setup() {
         # shellcheck source=/dev/null
         source "${JR_REPO_ROOT}/lib/${f}.sh"
     done
-    jr_use_stub podman
+    jr_use_stub docker
     load_target "${JR_REPO_ROOT}" "orin-nano-devkit"
     load_jetpack "${JR_REPO_ROOT}" "6.2.1"
     JR_WORKDIR="${JR_TMPDIR}/work"
@@ -16,10 +16,10 @@ setup() {
     export JR_WORKDIR JR_STORAGE
 }
 
-@test "do_flash invokes podman with the expected argv" {
+@test "do_flash invokes docker with the expected argv" {
     do_flash
     jr_read_stub_log
-    [[ "${output}" == *podman\ run\ --rm\ --privileged* ]]
+    [[ "${output}" == *docker\ run\ --rm\ --privileged* ]]
     [[ "${output}" == *--net\ host* ]]
     [[ "${output}" == */dev/bus/usb:/dev/bus/usb* ]]
     [[ "${output}" == *Linux_for_Tegra:/Linux_for_Tegra* ]]
@@ -34,23 +34,23 @@ setup() {
 }
 
 @test "do_flash builds the image locally when registry pull fails" {
-    # Replace the always-success podman stub: fail for 'image exists' (not
+    # Replace the always-success docker stub: fail for 'image exists' (not
     # present locally) and 'pull' (registry 403); succeed for build/run.
     local stubs_active="${JR_TMPDIR}/stubs-active"
-    rm -f "${stubs_active}/podman"
-    cat >"${stubs_active}/podman" <<'STUB'
+    rm -f "${stubs_active}/docker"
+    cat >"${stubs_active}/docker" <<'STUB'
 #!/usr/bin/env bash
-echo "podman $*" >>"${JR_STUB_LOG}"
+echo "docker $*" >>"${JR_STUB_LOG}"
 case "$1" in
     image) exit 1 ;;
     pull)  exit 1 ;;
     *)     exit 0 ;;
 esac
 STUB
-    chmod +x "${stubs_active}/podman"
+    chmod +x "${stubs_active}/docker"
 
     do_flash
     jr_read_stub_log
-    [[ "${output}" == *podman\ build\ -t\ ghcr.io/cbrake/jetson-restore:* ]]
-    [[ "${output}" == *podman\ run\ --rm* ]]
+    [[ "${output}" == *docker\ build\ -t\ ghcr.io/cbrake/jetson-restore:* ]]
+    [[ "${output}" == *docker\ run\ --rm* ]]
 }

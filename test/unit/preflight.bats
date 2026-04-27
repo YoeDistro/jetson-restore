@@ -31,7 +31,7 @@ setup() {
     jr_use_stub systemctl
     jr_use_stub chmod
     jr_use_stub lsusb
-    jr_use_stub podman
+    jr_use_stub docker
     jr_use_stub df
     jr_use_stub ip
 

@@ -21,7 +21,7 @@ test:
 	./test/helpers/bats-core/bin/bats -r test/unit
 
 container:
-	podman build -t jetson-restore:dev -f container/Containerfile container/
+	docker build -t jetson-restore:dev -f container/Containerfile container/
 
 clean:
 	rm -rf work/
