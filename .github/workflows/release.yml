@@ -1,0 +1,46 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read JetPack version from jetpacks/6.2.1.conf
+        id: jp
+        run: |
+          # Single-version pin in v1: 6.2.1.
+          echo "version=6.2.1" >>"${GITHUB_OUTPUT}"
+
+      - name: Log into ghcr.io
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | \
+               podman login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build container
+        run: |
+          podman build \
+            -t "ghcr.io/${{ github.repository_owner }}/jetson-restore:${{ github.ref_name }}" \
+            -t "ghcr.io/${{ github.repository_owner }}/jetson-restore:${{ steps.jp.outputs.version }}" \
+            -f container/Containerfile container/
+
+      - name: Push container
+        run: |
+          podman push "ghcr.io/${{ github.repository_owner }}/jetson-restore:${{ github.ref_name }}"
+          podman push "ghcr.io/${{ github.repository_owner }}/jetson-restore:${{ steps.jp.outputs.version }}"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            CHANGELOG.md
