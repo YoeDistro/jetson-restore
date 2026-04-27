@@ -33,6 +33,14 @@ ensure_l4t_extracted() {
     download_artifact "${rootfs}" "${JR_ROOTFS_URL}"
 
     local lt="${workdir}/Linux_for_Tegra"
+    # If the prior container run died mid-apply_binaries.sh, the rootfs is
+    # in a partial state that can't be recovered (e.g. /dev nodes already
+    # exist, breaking the next mknod). Wipe and re-extract.
+    if [[ -f "${lt}/.jr-rootfs-dirty" ]]; then
+        log_info "previous run left rootfs in a partial state; wiping and re-extracting"
+        run_sudo rm -rf "${lt}/rootfs"
+        rm -f "${lt}/.jr-extracted-${JR_JETPACK_VERSION}" "${lt}/.jr-rootfs-dirty"
+    fi
     if [[ ! -f "${lt}/.jr-extracted-${JR_JETPACK_VERSION}" ]]; then
         log_info "extracting BSP into ${lt}"
         mkdir -p "${workdir}"

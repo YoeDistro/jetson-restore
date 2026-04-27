@@ -29,13 +29,19 @@ register_qemu_binfmt() {
 register_qemu_binfmt
 
 # apply_binaries.sh is one-time per BSP version. Mark with a dotfile so
-# repeat runs skip it.
+# repeat runs skip it. apply_binaries.sh mutates the rootfs in place
+# (mknod /dev/*, dpkg into chroot, etc.), so a mid-run failure leaves
+# state the next run can't reconcile without a fresh rootfs. The
+# DIRTY_MARKER signals the host script to wipe + re-extract on next run.
 APPLIED_MARKER=".jr-binaries-applied"
+DIRTY_MARKER=".jr-rootfs-dirty"
 if [[ ! -f "${APPLIED_MARKER}" ]]; then
     echo "[container] running apply_binaries.sh (one-time per BSP)…"
+    : >"${DIRTY_MARKER}"
     ./tools/l4t_flash_prerequisites.sh
     ./apply_binaries.sh
     : >"${APPLIED_MARKER}"
+    rm -f "${DIRTY_MARKER}"
 else
     echo "[container] BSP binaries already applied"
 fi
