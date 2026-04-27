@@ -37,9 +37,12 @@ ensure_l4t_extracted() {
         log_info "extracting BSP into ${lt}"
         mkdir -p "${workdir}"
         tar -xpf "${bsp}" -C "${workdir}"
-        log_info "extracting rootfs into ${lt}/rootfs/"
+        # The sample rootfs has setuid binaries, device nodes, and root-owned
+        # files. NVIDIA's apply_binaries.sh validates ownership and rejects an
+        # unprivileged extraction with "rootfs has to be extracted with 'sudo'".
+        log_info "extracting rootfs into ${lt}/rootfs/ (requires sudo)"
         mkdir -p "${lt}/rootfs"
-        tar -xpf "${rootfs}" -C "${lt}/rootfs"
+        run_sudo tar -xpf "${rootfs}" -C "${lt}/rootfs"
         : >"${lt}/.jr-extracted-${JR_JETPACK_VERSION}"
     else
         log_info "Linux_for_Tegra already extracted for ${JR_JETPACK_VERSION}"

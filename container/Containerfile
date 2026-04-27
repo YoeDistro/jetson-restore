@@ -6,6 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Packages that l4t_flash_prerequisites.sh installs, plus tools the
 # entrypoint uses. Pinned to the 22.04 archive at image-build time.
 RUN apt-get update && apt-get install -y --no-install-recommends \
+        sudo \
         qemu-user-static binfmt-support \
         libxml2 device-tree-compiler \
         python3 python3-yaml \
