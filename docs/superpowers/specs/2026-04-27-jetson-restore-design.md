@@ -1,33 +1,46 @@
 # jetson-restore — Design
 
-**Status:** Approved (sections 1–3, 2026-04-27)
-**Scope:** v1
-**Audience:** Yoe / Jetson community; users on Arch Linux (and any modern Linux) who need a clean, scriptable way to restore stock NVIDIA L4T Ubuntu onto Jetson Orin dev kits.
+**Status:** Approved (sections 1–3, 2026-04-27) **Scope:** v1 **Audience:** Yoe
+/ Jetson community; users on Arch Linux (and any modern Linux) who need a clean,
+scriptable way to restore stock NVIDIA L4T Ubuntu onto Jetson Orin dev kits.
 
 ## 1. Problem
 
-NVIDIA's official flashing toolchain assumes an Ubuntu 20.04/22.04 host. Users on Arch (or NixOS, Fedora, etc.) currently choose between:
+NVIDIA's official flashing toolchain assumes an Ubuntu 20.04/22.04 host. Users
+on Arch (or NixOS, Fedora, etc.) currently choose between:
 
-- Running the official **SDK Manager Docker image** — works but is interactive-leaning, ~2 GB of tooling, requires a devzone login, and is poorly suited to scripted/automated reflashing.
-- Following community recipes (the SamueleFacenda NixOS gist, the bensyz Arch blog) — work, but are unpackaged shell snippets with no tests, no versioning, no maintenance.
-- Patching NVIDIA's scripts to run natively on Arch — works but is ongoing maintenance.
+- Running the official **SDK Manager Docker image** — works but is
+  interactive-leaning, ~2 GB of tooling, requires a devzone login, and is poorly
+  suited to scripted/automated reflashing.
+- Following community recipes (the SamueleFacenda NixOS gist, the bensyz Arch
+  blog) — work, but are unpackaged shell snippets with no tests, no versioning,
+  no maintenance.
+- Patching NVIDIA's scripts to run natively on Arch — works but is ongoing
+  maintenance.
 
-There is no maintained, distributable tool that turns "Arch host + Orin dev kit in recovery mode" into a one-command, reproducible restore to stock L4T Ubuntu.
+There is no maintained, distributable tool that turns "Arch host + Orin dev kit
+in recovery mode" into a one-command, reproducible restore to stock L4T Ubuntu.
 
 ## 2. Goals & Non-goals
 
 **Goals**
 
-- Single command flashes a known Orin dev kit to a pinned, tested JetPack 6.x + stock NVIDIA Ubuntu rootfs.
-- Works from Arch Linux today and from any Linux host where podman/docker + nfs-utils are available.
+- Single command flashes a known Orin dev kit to a pinned, tested JetPack 6.x +
+  stock NVIDIA Ubuntu rootfs.
+- Works from Arch Linux today and from any Linux host where podman/docker +
+  nfs-utils are available.
 - Idempotent host setup — running it twice is fast and safe.
-- Reproducible: same `--target` + `--jetpack` produces the same flash command and same artifacts every time.
-- Distributable: container image on `ghcr.io`, source on GitHub, optional AUR package later.
+- Reproducible: same `--target` + `--jetpack` produces the same flash command
+  and same artifacts every time.
+- Distributable: container image on `ghcr.io`, source on GitHub, optional AUR
+  package later.
 
 **Non-goals (v1)**
 
-- Yoe / Yocto images. (Repo name is `jetson-restore`; "restore" means stock L4T.)
-- Third-party carrier boards (Seeed, Antmicro, Connect Tech). Pluggable later via `targets/`.
+- Yoe / Yocto images. (Repo name is `jetson-restore`; "restore" means stock
+  L4T.)
+- Third-party carrier boards (Seeed, Antmicro, Connect Tech). Pluggable later
+  via `targets/`.
 - Orin NX modules.
 - SD-card flow (older Orin Nano) and JetPack 5.x.
 - A GUI / TUI.
@@ -46,7 +59,8 @@ There is no maintained, distributable tool that turns "Arch host + Orin dev kit 
 
 ## 4. Architecture
 
-Two-layer design: a thin host-side wrapper plus an Ubuntu container that carries NVIDIA's BSP toolchain.
+Two-layer design: a thin host-side wrapper plus an Ubuntu container that carries
+NVIDIA's BSP toolchain.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -73,11 +87,20 @@ Two-layer design: a thin host-side wrapper plus an Ubuntu container that carries
 
 **Why this split**
 
-- The container holds everything Ubuntu-specific — qemu-user-static binfmts, `apply_binaries.sh`, `l4t_initrd_flash.sh`, the Python/Debian-isms NVIDIA's BSP scripts assume. No patching of upstream scripts required.
-- The host holds everything that must be real-host (NFS export of a non-overlay path; JetPack 6 initrd flash requires this) or that needs host capability (udev, NetworkManager, systemd).
-- Container image is immutable and reproducible; per-run state lives in a bind-mounted `./work/` so downloads cache across runs.
+- The container holds everything Ubuntu-specific — qemu-user-static binfmts,
+  `apply_binaries.sh`, `l4t_initrd_flash.sh`, the Python/Debian-isms NVIDIA's
+  BSP scripts assume. No patching of upstream scripts required.
+- The host holds everything that must be real-host (NFS export of a non-overlay
+  path; JetPack 6 initrd flash requires this) or that needs host capability
+  (udev, NetworkManager, systemd).
+- Container image is immutable and reproducible; per-run state lives in a
+  bind-mounted `./work/` so downloads cache across runs.
 
-**Critical constraint** — the path `./work/Linux_for_Tegra` on the host is what gets bind-mounted into the container _and_ what NFS exports. Both layers see the same real filesystem path. Docker overlay paths break NFS export-from-overlay; this is the most common failure mode in community recipes and the architecture must avoid it by construction.
+**Critical constraint** — the path `./work/Linux_for_Tegra` on the host is what
+gets bind-mounted into the container _and_ what NFS exports. Both layers see the
+same real filesystem path. Docker overlay paths break NFS export-from-overlay;
+this is the most common failure mode in community recipes and the architecture
+must avoid it by construction.
 
 ### 4.1 CLI surface
 
@@ -143,14 +166,21 @@ jetson-restore/
 
 **Layout rationale**
 
-- One file per concern in `lib/`, ~100–200 lines each. Sourced individually so unit tests can stub one without dragging in the rest.
-- `targets/*.conf` and `jetpacks/*.conf` are plain `KEY=value` shell files. Adding a new target = add a file, no code change. This is the seam for future Orin NX, third-party carriers, JetPack 7.
-- `container/` is what gets built and pushed; tagged with both the tool version and the JetPack version it tracks (`:v0.1.0`, `:6.2.1`).
-- `share/` holds templates the runtime fills in. Templates checked in; rendered files land under `./work/`.
+- One file per concern in `lib/`, ~100–200 lines each. Sourced individually so
+  unit tests can stub one without dragging in the rest.
+- `targets/*.conf` and `jetpacks/*.conf` are plain `KEY=value` shell files.
+  Adding a new target = add a file, no code change. This is the seam for future
+  Orin NX, third-party carriers, JetPack 7.
+- `container/` is what gets built and pushed; tagged with both the tool version
+  and the JetPack version it tracks (`:v0.1.0`, `:6.2.1`).
+- `share/` holds templates the runtime fills in. Templates checked in; rendered
+  files land under `./work/`.
 
 ## 6. Preflight
 
-All preflight actions are **persistent and idempotent**. There is no post-flight cleanup phase. Users who want to fully remove what jetson-restore added run `jetson-restore uninstall`.
+All preflight actions are **persistent and idempotent**. There is no post-flight
+cleanup phase. Users who want to fully remove what jetson-restore added run
+`jetson-restore uninstall`.
 
 | #   | Check / action                                                     | Rationale                                                              |
 | --- | ------------------------------------------------------------------ | ---------------------------------------------------------------------- |
@@ -167,11 +197,21 @@ All preflight actions are **persistent and idempotent**. There is no post-flight
 | 11  | Container image present locally or pullable                        | Avoid surprise pull mid-flow                                           |
 | 12  | BSP + rootfs cached or downloadable, checksums verified            | Avoid surprise 8 GB download mid-flow                                  |
 
-**Honesty about nfs-server:** starting nfs-server leaves a network daemon running on the host (listening on 2049 on all interfaces by default). The _export_ is locked to RNDIS, so the served data isn't reachable elsewhere, but the daemon itself is. v1 starts it, leaves it, and prints loudly that it did so, with a one-line hint to `systemctl disable --now nfs-server` for users who'd rather it be off. Binding nfs-server's listeners to `192.168.55.1` only is a follow-up.
+**Honesty about nfs-server:** starting nfs-server leaves a network daemon
+running on the host (listening on 2049 on all interfaces by default). The
+_export_ is locked to RNDIS, so the served data isn't reachable elsewhere, but
+the daemon itself is. v1 starts it, leaves it, and prints loudly that it did so,
+with a one-line hint to `systemctl disable --now nfs-server` for users who'd
+rather it be off. Binding nfs-server's listeners to `192.168.55.1` only is a
+follow-up.
 
-**Sudo policy:** the wrapper does not assume passwordless sudo. It prints exactly which commands need elevation, in order, and either runs them with `sudo` (one prompt per session) or — with `--no-sudo` — writes them to `./work/preflight.sh` for the user to run manually. No silent sudo.
+**Sudo policy:** the wrapper does not assume passwordless sudo. It prints
+exactly which commands need elevation, in order, and either runs them with
+`sudo` (one prompt per session) or — with `--no-sudo` — writes them to
+`./work/preflight.sh` for the user to run manually. No silent sudo.
 
-**`--check`** runs preflight only, exits with the list of things that would change. Cheap pre-flight debug.
+**`--check`** runs preflight only, exits with the list of things that would
+change. Cheap pre-flight debug.
 
 ## 7. Data flow (a single flash)
 
@@ -206,14 +246,21 @@ user runs: jetson-restore --target orin-nano-devkit --storage nvme
 
 ## 8. Error handling
 
-- **Fail fast and loud, far from the device.** Preflight catches ~90% of failures before any USB or NFS state changes.
-- **Every fatal exit prints what to do next**, not just what went wrong. Example: "nfs-server not running. Run `sudo systemctl start nfs-server`, or re-run with `--start-services` to let jetson-restore start it for you."
-- **No silent retries.** A flash that retries automatically masks the hardware/USB issue. Print, exit, let the user re-run.
-- **Container exit code propagates to the host wrapper.** The wrapper interprets known L4T error markers (e.g., "Failed to enter recovery mode") and adds context.
+- **Fail fast and loud, far from the device.** Preflight catches ~90% of
+  failures before any USB or NFS state changes.
+- **Every fatal exit prints what to do next**, not just what went wrong.
+  Example: "nfs-server not running. Run `sudo systemctl start nfs-server`, or
+  re-run with `--start-services` to let jetson-restore start it for you."
+- **No silent retries.** A flash that retries automatically masks the
+  hardware/USB issue. Print, exit, let the user re-run.
+- **Container exit code propagates to the host wrapper.** The wrapper interprets
+  known L4T error markers (e.g., "Failed to enter recovery mode") and adds
+  context.
 
 ## 9. Testing strategy
 
-Hardware E2E is opt-in. The first six layers below run on every PR with no hardware.
+Hardware E2E is opt-in. The first six layers below run on every PR with no
+hardware.
 
 | Layer                 | Coverage                                                                                                             | Tooling                            | Where                                               |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | --------------------------------------------------- |
@@ -225,23 +272,33 @@ Hardware E2E is opt-in. The first six layers below run on every PR with no hardw
 | Uninstall test        | `jetson-restore uninstall` removes everything preflight added; nfs-server state preserved iff the tool started it    | bats with mocked sudo              | CI                                                  |
 | End-to-end (hardware) | Plug in Orin Nano dev kit and AGX Orin dev kit; flash; boot; SSH in; verify L4T release file                         | manual or self-hosted runner       | Gated by `JETSON_RESTORE_E2E=1`, run before tagging |
 
-CI host: GitHub Actions `ubuntu-latest` for the main legs; an additional `arch:latest` container leg catches Arch-only bash quirks.
+CI host: GitHub Actions `ubuntu-latest` for the main legs; an additional
+`arch:latest` container leg catches Arch-only bash quirks.
 
-**Not tested:** flash-time performance, content of the resulting Ubuntu rootfs (NVIDIA's responsibility), broad podman/docker version compatibility (pin a known-working baseline, document it).
+**Not tested:** flash-time performance, content of the resulting Ubuntu rootfs
+(NVIDIA's responsibility), broad podman/docker version compatibility (pin a
+known-working baseline, document it).
 
 **Release flow:**
 
 1. Tag `v0.x.y`.
-2. CI builds the container, pushes `ghcr.io/.../jetson-restore:v0.x.y` and `:6.2.1`.
+2. CI builds the container, pushes `ghcr.io/.../jetson-restore:v0.x.y` and
+   `:6.2.1`.
 3. GH Release auto-drafted from `CHANGELOG.md`, checksums attached.
 4. Maintainer pastes E2E log, hits publish.
 
 ## 10. Prior art consulted
 
-- NVIDIA SDK Manager Docker image — official, used by the himvis.com Yoe-AGX Orin walkthrough.
-- SamueleFacenda NixOS gist — `ubuntu:20.04` container + host NFS + `l4t_initrd_flash.sh`.
+- NVIDIA SDK Manager Docker image — official, used by the himvis.com Yoe-AGX
+  Orin walkthrough.
+- SamueleFacenda NixOS gist — `ubuntu:20.04` container + host NFS +
+  `l4t_initrd_flash.sh`.
 - bensyz Arch Linux blog — patches needed for native L4T tools on Arch.
 - Balena `jetson-flash` — Docker wrapper, but flashes balenaOS, not stock L4T.
-- Anduril `jetpack-nixos`, OE4T `meta-tegra` — adjacent flash flows for non-Ubuntu targets.
+- Anduril `jetpack-nixos`, OE4T `meta-tegra` — adjacent flash flows for
+  non-Ubuntu targets.
 
-The architecture above is most directly derived from the SamueleFacenda gist (container + NFS export of a real host path) plus selected Arch-specific preflight handling from the bensyz writeup, packaged as a maintained tool with tests, pinning, and reproducibility.
+The architecture above is most directly derived from the SamueleFacenda gist
+(container + NFS export of a real host path) plus selected Arch-specific
+preflight handling from the bensyz writeup, packaged as a maintained tool with
+tests, pinning, and reproducibility.
