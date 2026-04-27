@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+# jetson-restore — restore stock NVIDIA L4T Ubuntu onto Jetson Orin dev kits.
+set -euo pipefail
+
+# Resolve the repo root from this script's location.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+JR_REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+export JR_REPO_ROOT
+
+# Source libs in dependency order.
+for f in util config runtime recovery udev netmgr nfs cache preflight flash uninstall; do
+    # shellcheck source=/dev/null
+    source "${JR_REPO_ROOT}/lib/${f}.sh"
+done
+
+usage() {
+    cat <<USAGE
+Usage:
+  jetson-restore --target <name> [--storage nvme] [--jetpack <ver>]
+                 [--dry-run] [--check] [--skip-preflight]
+                 [--no-sudo] [--start-services]
+                 [--keep-work] [--device <bus>:<dev>]
+
+  jetson-restore uninstall
+
+Targets:
+$(list_targets "${JR_REPO_ROOT}" | sed 's/^/  /')
+
+Examples:
+  jetson-restore --target orin-nano-devkit
+  jetson-restore --target agx-orin-devkit --jetpack 6.2.1
+  jetson-restore --check    # preflight only, no flash
+  jetson-restore uninstall  # remove host config
+USAGE
+}
+
+if [[ $# -eq 0 ]]; then
+    usage
+    exit 2
+fi
+
+# Subcommand: uninstall.
+if [[ "$1" == "uninstall" ]]; then
+    do_uninstall
+    exit 0
+fi
+
+# Defaults.
+JR_TARGET=""
+JR_STORAGE="nvme"
+JR_JETPACK_OVERRIDE=""
+JR_DRY_RUN=0
+JR_CHECK_ONLY=0
+JR_SKIP_PREFLIGHT=0
+JR_NO_SUDO=0
+JR_START_SERVICES=0
+JR_KEEP_WORK=0
+JR_DEVICE=""
+export JR_DRY_RUN JR_NO_SUDO JR_START_SERVICES JR_KEEP_WORK
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --target)
+            JR_TARGET="$2"
+            shift 2
+            ;;
+        --storage)
+            JR_STORAGE="$2"
+            shift 2
+            ;;
+        --jetpack)
+            JR_JETPACK_OVERRIDE="$2"
+            shift 2
+            ;;
+        --dry-run)
+            JR_DRY_RUN=1
+            shift
+            ;;
+        --check)
+            JR_CHECK_ONLY=1
+            shift
+            ;;
+        --skip-preflight)
+            JR_SKIP_PREFLIGHT=1
+            shift
+            ;;
+        --no-sudo)
+            JR_NO_SUDO=1
+            shift
+            ;;
+        --start-services)
+            JR_START_SERVICES=1
+            shift
+            ;;
+        --keep-work)
+            JR_KEEP_WORK=1
+            shift
+            ;;
+        --device)
+            JR_DEVICE="$2"
+            shift 2
+            ;;
+        --help | -h)
+            usage
+            exit 0
+            ;;
+        *) log_die "unknown argument: $1" ;;
+    esac
+done
+
+if [[ -z "${JR_TARGET}" ]]; then
+    log_err "missing --target"
+    usage
+    exit 2
+fi
+if [[ "${JR_STORAGE}" != "nvme" ]]; then
+    log_die "unsupported storage in v1: ${JR_STORAGE} (only nvme)"
+fi
+
+load_target "${JR_REPO_ROOT}" "${JR_TARGET}"
+load_jetpack "${JR_REPO_ROOT}" "${JR_JETPACK_OVERRIDE:-${JR_DEFAULT_JETPACK}}"
+
+# Workdir is ./work next to bin/.
+JR_WORKDIR="${JR_REPO_ROOT}/work"
+mkdir -p "${JR_WORKDIR}"
+export JR_WORKDIR JR_STORAGE JR_DEVICE
+
+# Sudo queue file used in --no-sudo mode.
+if [[ "${JR_NO_SUDO}" == "1" ]]; then
+    JR_SUDO_QUEUE_FILE="${JR_WORKDIR}/preflight.sh"
+    : >"${JR_SUDO_QUEUE_FILE}"
+    chmod +x "${JR_SUDO_QUEUE_FILE}"
+    export JR_SUDO_QUEUE_FILE
+fi
+
+# Dry-run short-circuits before preflight to avoid touching host state.
+if [[ "${JR_DRY_RUN}" == "1" ]]; then
+    log_info "[DRY-RUN] would run preflight, then ensure_l4t_extracted, then flash for ${JR_BOARD_ID} on ${JR_STORAGE}"
+    exit 0
+fi
+
+if [[ "${JR_SKIP_PREFLIGHT}" != "1" ]]; then
+    run_preflight
+fi
+
+if [[ "${JR_CHECK_ONLY}" == "1" ]]; then
+    log_info "preflight complete; exiting (--check)"
+    exit 0
+fi
+
+ensure_l4t_extracted "${JR_WORKDIR}"
+do_flash
+
+log_info "flash complete; reboot the device to boot into Ubuntu"
