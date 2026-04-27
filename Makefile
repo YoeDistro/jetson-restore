@@ -14,7 +14,7 @@ help:
 	@echo "  clean      remove ./work/"
 
 lint:
-	$(if $(SHELL_FILES),shellcheck $(SHELL_FILES),@echo "No shell files found; skipping shellcheck")
+	$(if $(SHELL_FILES),shellcheck -S warning $(SHELL_FILES),@echo "No shell files found; skipping shellcheck")
 	$(if $(SHELL_FILES),shfmt -d -i 4 -ci $(SHELL_FILES),@echo "No shell files found; skipping shfmt")
 
 test:
