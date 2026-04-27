@@ -1,0 +1,5 @@
+# Ignore SC1091: shellcheck can't follow runtime sourced files.
+# Our lib/*.sh sourcing pattern is intentional.
+disable=SC1091
+# Treat warnings as errors in CI.
+severity=warning
