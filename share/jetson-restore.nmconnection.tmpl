@@ -1,0 +1,15 @@
+[connection]
+id=jetson-restore-rndis
+type=ethernet
+interface-name=
+match-device=mac:@JR_RNDIS_MAC@
+autoconnect=false
+
+[ethernet]
+mac-address=@JR_RNDIS_MAC@
+
+[ipv4]
+method=disabled
+
+[ipv6]
+method=disabled

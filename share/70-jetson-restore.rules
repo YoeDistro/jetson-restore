@@ -1,0 +1,5 @@
+# /etc/udev/rules.d/70-jetson-restore.rules
+# Allow the user's primary group to access NVIDIA Jetson devices in recovery mode.
+# Disable USB autosuspend for these devices to prevent mid-flash drops.
+SUBSYSTEM=="usb", ATTR{idVendor}=="0955", MODE="0660", GROUP="@JR_GROUP@", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTR{idVendor}=="0955", ATTR{power/control}="on"
