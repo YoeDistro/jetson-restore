@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+echo "lsusb $*" >>"${JR_STUB_LOG}"
+# When the test sets JR_LSUSB_OUTPUT, return it. Otherwise empty.
+printf '%s\n' "${JR_LSUSB_OUTPUT:-}"
+exit 0
