@@ -23,17 +23,19 @@ fi
 
 case "${STORAGE}" in
     nvme)
-        external_device="nvme0n1p1"
+        echo "[container] running l4t_initrd_flash.sh for ${BOARD_ID} on NVMe"
+        exec ./tools/kernel_flash/l4t_initrd_flash.sh \
+            --external-device nvme0n1p1 \
+            -c ./tools/kernel_flash/flash_l4t_external.xml \
+            --showlogs --network usb0 \
+            "${BOARD_ID}" external
+        ;;
+    emmc)
+        echo "[container] running flash.sh for ${BOARD_ID} on eMMC (mmcblk0p1)"
+        exec ./flash.sh "${BOARD_ID}" mmcblk0p1
         ;;
     *)
         echo "[container] unsupported storage: ${STORAGE}" >&2
         exit 2
         ;;
 esac
-
-echo "[container] running l4t_initrd_flash.sh for ${BOARD_ID} on ${STORAGE}"
-exec ./tools/kernel_flash/l4t_initrd_flash.sh \
-    --external-device "${external_device}" \
-    -c ./tools/kernel_flash/flash_l4t_external.xml \
-    --showlogs --network usb0 \
-    "${BOARD_ID}" external

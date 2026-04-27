@@ -3,7 +3,6 @@
 set -euo pipefail
 
 : "${JR_IMAGE:=ghcr.io/cbrake/jetson-restore}"
-: "${JR_STORAGE:=nvme}"
 
 do_flash() {
     local runtime

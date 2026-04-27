@@ -28,3 +28,24 @@ load ../helpers/load
     # Should mention the dry-run summary; should NOT actually run preflight or flash.
     [[ "${output}" == *DRY-RUN* ]]
 }
+
+@test "jetson-restore --storage emmc on agx-orin-devkit is accepted" {
+    run "${JR_REPO_ROOT}/bin/jetson-restore" \
+        --target agx-orin-devkit --storage emmc --dry-run
+    assert_success
+    [[ "${output}" == *DRY-RUN*emmc* ]]
+}
+
+@test "jetson-restore --storage emmc on orin-nano-devkit is rejected" {
+    run "${JR_REPO_ROOT}/bin/jetson-restore" \
+        --target orin-nano-devkit --storage emmc --dry-run
+    assert_failure 2
+    [[ "${output}" == *not\ supported\ on\ orin-nano-devkit* ]]
+}
+
+@test "jetson-restore --storage bogus is rejected" {
+    run "${JR_REPO_ROOT}/bin/jetson-restore" \
+        --target agx-orin-devkit --storage bogus --dry-run
+    assert_failure 2
+    [[ "${output}" == *not\ supported* ]]
+}

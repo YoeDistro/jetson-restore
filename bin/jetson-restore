@@ -16,7 +16,7 @@ done
 usage() {
     cat <<USAGE
 Usage:
-  jetson-restore --target <name> [--storage nvme] [--jetpack <ver>]
+  jetson-restore --target <name> [--storage <nvme|emmc>] [--jetpack <ver>]
                  [--dry-run] [--check] [--skip-preflight]
                  [--no-sudo] [--start-services]
                  [--keep-work] [--device <bus>:<dev>]
@@ -47,7 +47,7 @@ fi
 
 # Defaults.
 JR_TARGET=""
-JR_STORAGE="nvme"
+JR_STORAGE=""
 JR_JETPACK_OVERRIDE=""
 JR_DRY_RUN=0
 JR_CHECK_ONLY=0
@@ -113,12 +113,15 @@ if [[ -z "${JR_TARGET}" ]]; then
     usage
     exit 2
 fi
-if [[ "${JR_STORAGE}" != "nvme" ]]; then
-    log_die "unsupported storage in v1: ${JR_STORAGE} (only nvme)"
-fi
 
 load_target "${JR_REPO_ROOT}" "${JR_TARGET}"
 load_jetpack "${JR_REPO_ROOT}" "${JR_JETPACK_OVERRIDE:-${JR_DEFAULT_JETPACK}}"
+
+# Storage default is per-target; validate against the target's allowlist.
+: "${JR_STORAGE:=${JR_DEFAULT_STORAGE}}"
+if ! grep -qw "${JR_STORAGE}" <<<"${JR_VALID_STORAGE}"; then
+    log_die "storage '${JR_STORAGE}' not supported on ${JR_TARGET} (valid: ${JR_VALID_STORAGE})"
+fi
 
 # Workdir is ./work next to bin/.
 JR_WORKDIR="${JR_REPO_ROOT}/work"

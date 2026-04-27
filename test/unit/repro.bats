@@ -12,7 +12,8 @@ setup() {
     load_jetpack "${JR_REPO_ROOT}" "6.2.1"
     JR_WORKDIR="${JR_TMPDIR}/work"
     mkdir -p "${JR_WORKDIR}/Linux_for_Tegra"
-    export JR_WORKDIR
+    JR_STORAGE="${JR_DEFAULT_STORAGE}"
+    export JR_WORKDIR JR_STORAGE
 }
 
 @test "container argv matches the pinned expected-orin-nano-argv.txt" {

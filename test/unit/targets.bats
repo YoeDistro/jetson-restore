@@ -5,7 +5,8 @@ load ../helpers/load
 @test "every target file defines all required keys" {
     local required=(
         JR_TARGET_NAME JR_BOARD_ID JR_USB_PRODUCT_ID
-        JR_DEFAULT_JETPACK JR_DEFAULT_STORAGE JR_RECOVERY_INSTRUCTIONS
+        JR_DEFAULT_JETPACK JR_DEFAULT_STORAGE JR_VALID_STORAGE
+        JR_RECOVERY_INSTRUCTIONS
     )
     for f in "${JR_REPO_ROOT}/targets"/*.conf; do
         unset "${required[@]}"
@@ -15,6 +16,9 @@ load ../helpers/load
             [ -n "${!key:-}" ] || \
                 fail "${f}: ${key} is unset or empty"
         done
+        # Default must be in the valid set.
+        grep -qw "${JR_DEFAULT_STORAGE}" <<<"${JR_VALID_STORAGE}" || \
+            fail "${f}: JR_DEFAULT_STORAGE='${JR_DEFAULT_STORAGE}' not in JR_VALID_STORAGE='${JR_VALID_STORAGE}'"
     done
 }
 
