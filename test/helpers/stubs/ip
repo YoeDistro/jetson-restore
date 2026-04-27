@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+echo "ip $*" >>"${JR_STUB_LOG}"
+# By default no 192.168.55.0/24 route. Tests that want one set JR_IP_ROUTE_OUT.
+printf '%s\n' "${JR_IP_ROUTE_OUT:-}"
+exit 0

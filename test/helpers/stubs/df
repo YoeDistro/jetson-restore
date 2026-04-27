@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+echo "df $*" >>"${JR_STUB_LOG}"
+# Output mimicking: `df --output=avail -k <path>`
+echo "Avail"
+echo "${JR_DF_FREE_KB:-99999999}"
