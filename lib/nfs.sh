@@ -54,8 +54,8 @@ ensure_nfs_server_running() {
 
 stop_nfs_server_if_we_started_it() {
     if [[ -f "$(_marker_file)" ]]; then
-        log_info "stopping nfs-server (we started it earlier)"
-        "${JR_FS_WRITER}" systemctl stop nfs-server
+        log_info "stopping and disabling nfs-server (we enabled it earlier)"
+        "${JR_FS_WRITER}" systemctl disable --now nfs-server
         "${JR_FS_WRITER}" rm -f "$(_marker_file)"
     fi
 }

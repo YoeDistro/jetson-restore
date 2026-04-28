@@ -60,16 +60,18 @@ setup() {
     [[ "${output}" == *exportfs\ -ra* ]]
 }
 
-@test "stop_nfs_server_if_we_started_it stops only when marker present" {
+@test "stop_nfs_server_if_we_started_it stops and disables when marker present" {
     : >"${JR_NFS_STATE_DIR}/nfs-server-started-by-us"
     stop_nfs_server_if_we_started_it
     jr_read_stub_log
-    [[ "${output}" == *systemctl\ stop\ nfs-server* ]]
+    [[ "${output}" == *systemctl\ disable\ --now\ nfs-server* ]]
+    [ ! -f "${JR_NFS_STATE_DIR}/nfs-server-started-by-us" ]
 }
 
 @test "stop_nfs_server_if_we_started_it is no-op when no marker" {
     rm -f "${JR_NFS_STATE_DIR}/nfs-server-started-by-us"
     stop_nfs_server_if_we_started_it
     jr_read_stub_log
-    [[ "${output}" != *systemctl\ stop\ nfs-server* ]]
+    [[ "${output}" != *systemctl\ disable* ]]
+    [[ "${output}" != *systemctl\ stop* ]]
 }

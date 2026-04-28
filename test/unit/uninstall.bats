@@ -28,7 +28,7 @@ setup() {
     jr_use_stub systemctl
 }
 
-@test "do_uninstall removes udev, NM, exports, and stops nfs only if we started it" {
+@test "do_uninstall removes udev, NM, exports, and disables nfs only if we enabled it" {
     : >"${JR_UDEV_DEST}"
     : >"${JR_NM_DEST}"
     : >"${JR_NFS_EXPORTS_DEST}"
@@ -41,11 +41,12 @@ setup() {
     [ ! -f "${JR_NFS_EXPORTS_DEST}" ]
 
     jr_read_stub_log
-    [[ "${output}" == *systemctl\ stop\ nfs-server* ]]
+    [[ "${output}" == *systemctl\ disable\ --now\ nfs-server* ]]
 }
 
-@test "do_uninstall does not stop nfs-server when no marker is present" {
+@test "do_uninstall does not touch nfs-server when no marker is present" {
     do_uninstall
     jr_read_stub_log
-    [[ "${output}" != *systemctl\ stop\ nfs-server* ]]
+    [[ "${output}" != *systemctl\ disable* ]]
+    [[ "${output}" != *systemctl\ stop* ]]
 }
