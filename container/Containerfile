@@ -15,9 +15,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libxml2 libxml2-utils device-tree-compiler \
         python3 python3-yaml \
         abootimg sshpass openssh-client dosfstools binutils cpio rsync zstd lbzip2 \
+        nfs-kernel-server \
         uuid-runtime ca-certificates curl iproute2 \
         cpp \
     && rm -rf /var/lib/apt/lists/*
+
+# l4t_initrd_flash.sh writes a transient symlink into /etc/udev/rules.d/
+# during the flash. The container has no udevd to consume the rule, but
+# the directory must exist for the symlink syscall to succeed.
+RUN mkdir -p /etc/udev/rules.d
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
