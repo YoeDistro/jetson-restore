@@ -20,7 +20,7 @@ for the design and prior-art survey.
 ## Supported targets (v1)
 
 - Orin Nano dev kit (NVMe)
-- AGX Orin dev kit (NVMe)
+- AGX Orin dev kit (NVMe or eMMC; pick with `--storage nvme|emmc`, default NVMe)
 - JetPack 6.2.1 / L4T R36.4.4
 
 ## Quick start
@@ -34,7 +34,7 @@ for the design and prior-art survey.
 3. Run:
 
    ```bash
-   git clone https://github.com/<owner>/jetson-restore
+   git clone https://github.com/YoeDistro/jetson-restore
    cd jetson-restore
    ./bin/jetson-restore --target orin-nano-devkit
    ```
@@ -133,8 +133,8 @@ board.
 
 **v1 in progress.** The unit test suite runs in CI on every push. Hardware
 end-to-end on real Orin Nano + AGX Orin dev kits is gated on
-`JETSON_RESTORE_E2E=1` and run before each release. BSP and rootfs downloads
-are trusted via HTTPS to `developer.nvidia.com`; no checksum pinning.
+`JETSON_RESTORE_E2E=1` and run before each release. BSP and rootfs downloads are
+trusted via HTTPS to `developer.nvidia.com`; no checksum pinning.
 
 ## License
 
