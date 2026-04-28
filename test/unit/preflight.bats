@@ -4,7 +4,7 @@ load ../helpers/load
 
 setup() {
     # Bring in everything preflight depends on.
-    for f in util config runtime recovery udev netmgr nfs cache preflight; do
+    for f in util config runtime recovery udev netmgr cache preflight; do
         # shellcheck source=/dev/null
         source "${JR_REPO_ROOT}/lib/${f}.sh"
     done
@@ -12,10 +12,8 @@ setup() {
     # Per-test stub roots.
     JR_UDEV_DEST="${JR_TMPDIR}/etc/udev/rules.d/70-jetson-restore.rules"
     JR_NM_DEST="${JR_TMPDIR}/etc/NetworkManager/system-connections/jetson-restore-rndis.nmconnection"
-    JR_NFS_EXPORTS_DEST="${JR_TMPDIR}/etc/exports.d/jetson-restore.conf"
-    JR_NFS_STATE_DIR="${JR_TMPDIR}/var/lib/jetson-restore"
     JR_WORKDIR="${JR_TMPDIR}/work"
-    export JR_UDEV_DEST JR_NM_DEST JR_NFS_EXPORTS_DEST JR_NFS_STATE_DIR JR_WORKDIR
+    export JR_UDEV_DEST JR_NM_DEST JR_WORKDIR
 
     mkdir -p "${JR_WORKDIR}"
 
@@ -27,7 +25,6 @@ setup() {
     jr_use_stub tee
     jr_use_stub udevadm
     jr_use_stub nmcli
-    jr_use_stub exportfs
     jr_use_stub systemctl
     jr_use_stub chmod
     jr_use_stub lsusb
@@ -40,6 +37,9 @@ setup() {
     export JR_DF_FREE_KB
     export JR_IP_ROUTE_OUT
 
+    # Default: host nfs-server is NOT running. The container manages NFS itself.
+    JR_SYSTEMCTL_STATE="inactive"
+
     # Load configs the entrypoint normally loads.
     load_target  "${JR_REPO_ROOT}" "orin-nano-devkit"
     load_jetpack "${JR_REPO_ROOT}" "6.2.1"
@@ -47,7 +47,6 @@ setup() {
 
 @test "run_preflight succeeds with happy-path stubs" {
     JR_LSUSB_OUTPUT="Bus 003 Device 042: ID 0955:7e19 NVIDIA Corp. APX"
-    JR_SYSTEMCTL_STATE="active"
     JR_DF_FREE_KB=$((40 * 1024 * 1024))  # 40 GB free
     JR_IP_ROUTE_OUT=""
     run run_preflight
@@ -56,7 +55,6 @@ setup() {
 
 @test "run_preflight fails when device is not in recovery mode" {
     JR_LSUSB_OUTPUT=""
-    JR_SYSTEMCTL_STATE="active"
     JR_DF_FREE_KB=$((40 * 1024 * 1024))
     JR_IP_ROUTE_OUT=""
     JR_RECOVERY_TIMEOUT=1
@@ -67,12 +65,23 @@ setup() {
 
 @test "run_preflight fails when disk space is below 30 GB" {
     JR_LSUSB_OUTPUT="Bus 003 Device 042: ID 0955:7e19 NVIDIA Corp. APX"
-    JR_SYSTEMCTL_STATE="active"
     JR_DF_FREE_KB=$((10 * 1024 * 1024))  # 10 GB
     JR_IP_ROUTE_OUT=""
     run run_preflight
     assert_failure 2
     [[ "${output}" == *insufficient\ disk\ space* ]]
+}
+
+@test "run_preflight fails when host nfs-server is running" {
+    # The container starts its own nfsd via --net host; a host nfsd would
+    # collide on port 2049 and clobber the container's exports.
+    JR_LSUSB_OUTPUT="Bus 003 Device 042: ID 0955:7e19 NVIDIA Corp. APX"
+    JR_DF_FREE_KB=$((40 * 1024 * 1024))
+    JR_IP_ROUTE_OUT=""
+    JR_SYSTEMCTL_STATE="active"
+    run run_preflight
+    assert_failure 2
+    [[ "${output}" == *host\ nfs-server\ is\ running* ]]
 }
 
 @test "run_preflight succeeds when target Jetson exposes a second non-recovery 0955 device" {
@@ -83,7 +92,6 @@ setup() {
     JR_LSUSB_OUTPUT="\
 Bus 001 Device 031: ID 0955:7045 NVIDIA Corp. Tegra On-Platform Operator
 Bus 001 Device 032: ID 0955:7023 NVIDIA Corp. APX"
-    JR_SYSTEMCTL_STATE="active"
     JR_DF_FREE_KB=$((40 * 1024 * 1024))
     JR_IP_ROUTE_OUT=""
     run run_preflight
@@ -94,7 +102,6 @@ Bus 001 Device 032: ID 0955:7023 NVIDIA Corp. APX"
     JR_LSUSB_OUTPUT="\
 Bus 003 Device 042: ID 0955:7e19 NVIDIA Corp. APX
 Bus 004 Device 015: ID 0955:7e19 NVIDIA Corp. APX"
-    JR_SYSTEMCTL_STATE="active"
     JR_DF_FREE_KB=$((40 * 1024 * 1024))
     JR_IP_ROUTE_OUT=""
     run run_preflight
@@ -104,7 +111,6 @@ Bus 004 Device 015: ID 0955:7e19 NVIDIA Corp. APX"
 
 @test "run_preflight is idempotent on the second invocation" {
     JR_LSUSB_OUTPUT="Bus 003 Device 042: ID 0955:7e19 NVIDIA Corp. APX"
-    JR_SYSTEMCTL_STATE="active"
     JR_DF_FREE_KB=$((40 * 1024 * 1024))
     JR_IP_ROUTE_OUT=""
     run_preflight

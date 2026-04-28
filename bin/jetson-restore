@@ -8,7 +8,7 @@ JR_REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 export JR_REPO_ROOT
 
 # Source libs in dependency order.
-for f in util config runtime recovery udev netmgr nfs cache preflight flash uninstall; do
+for f in util config runtime recovery udev netmgr cache preflight flash uninstall; do
     # shellcheck source=/dev/null
     source "${JR_REPO_ROOT}/lib/${f}.sh"
 done

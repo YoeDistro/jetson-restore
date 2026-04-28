@@ -9,25 +9,43 @@ NVIDIA's official flashing toolchain assumes an Ubuntu 20.04/22.04 host. From
 Arch (or NixOS, Fedora, …) the existing options are: run NVIDIA's SDK Manager
 Docker image (interactive, ~2 GB, devzone login), follow community gists
 (unpackaged, untested), or patch NVIDIA's scripts for native Arch (ongoing
-maintenance burden). `jetson-restore` packages the working approach — a thin
-host wrapper plus a pinned Ubuntu container — as a maintained tool with tests,
-idempotent host setup, and reproducible builds.
+maintenance burden). `jetson-restore` is a thin host wrapper around
+[**NVIDIA's official `jetson-linux-flash-x86` container**](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/jetson-linux-flash-x86)
+— we don't ship our own image — plus idempotent host setup (udev rule for
+USB recovery + RNDIS auto-IP, NM keyfile) and a reproducible BSP cache.
 
-See
-[`docs/superpowers/specs/2026-04-27-jetson-restore-design.md`](docs/superpowers/specs/2026-04-27-jetson-restore-design.md)
-for the design and prior-art survey.
+For current architecture, see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+### What runs inside the container
+
+The container drives NVIDIA's stock flash flow against the BSP tree we extract
+into `./work/Linux_for_Tegra/`. Two scripts do the real work:
+
+- **`apply_binaries.sh`** (one-shot, per BSP version): unpacks NVIDIA's BSP
+  payload — kernel `Image`/dtb, NVIDIA-signed boot binaries, NVIDIA's L4T Debian
+  packages — into the sample rootfs, runs `nv_customize_rootfs.sh`, and rebuilds
+  `boot/initrd`. After this completes the rootfs is "Jetson ready". We mark
+  `.jr-binaries-applied` so re-runs skip it.
+- **`flash.sh`** (eMMC) or **`tools/kernel_flash/l4t_initrd_flash.sh`** (NVMe):
+  pushes the boot blob over USB recovery, the Jetson reboots into an initrd, and
+  either writes eMMC directly or NFS-mounts the rootfs from the host and writes
+  NVMe.
 
 ## Supported targets (v1)
 
 - Orin Nano dev kit (NVMe)
-- AGX Orin dev kit (NVMe or eMMC; pick with `--storage nvme|emmc`, default NVMe)
+- AGX Orin dev kit (NVMe or eMMC; pick with `--storage nvme|emmc`, default
+  NVMe). On AGX Orin, `--storage nvme` actually writes both eMMC (boot chain +
+  fallback rootfs) and NVMe (primary rootfs) — see
+  [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#agx-orin-two-device-flash-for-nvme-mode)
+  for why.
 - JetPack 6.2.1 / L4T R36.4.4
 
 ## Quick start
 
 1. Install dependencies:
-   - Arch: `sudo pacman -S docker nfs-utils sudo`
-   - Ubuntu: `sudo apt install docker.io nfs-kernel-server sudo`
+   - Arch: `sudo pacman -S docker sudo`
+   - Ubuntu: `sudo apt install docker.io sudo`
 
 2. Put the dev kit in recovery mode (see [Recovery mode](#recovery-mode) below).
 
@@ -51,22 +69,24 @@ for the design and prior-art survey.
 - `jetson-restore --dry-run` — print every command that would run.
 - `jetson-restore --no-sudo` — write sudo commands to `./work/preflight.sh` for
   manual execution.
-- `jetson-restore uninstall` — remove the udev rule, NM keyfile, NFS export, and
-  stop nfs-server iff jetson-restore started it.
+- `jetson-restore uninstall` — remove the udev rule and NM keyfile.
 
 ## What it changes on your host
 
 Persistent (idempotent) — left in place across runs:
 
-- `/etc/udev/rules.d/70-jetson-restore.rules` — non-root access to VID `0955`
-  and USB autosuspend disable.
+- `/etc/udev/rules.d/70-jetson-restore.rules` — non-root access to VID `0955`,
+  USB autosuspend disable, and auto-IP `192.168.55.1/24` on `usb0` when the
+  Jetson's RNDIS gadget enumerates.
 - `/etc/NetworkManager/system-connections/jetson-restore-rndis.nmconnection` —
-  ignore the recovery RNDIS interface.
-- `/etc/exports.d/jetson-restore.conf` — NFS export of `./work/Linux_for_Tegra`
-  to `192.168.55.0/24` only.
-- `nfs-server` started and enabled (idle daemon listening on port 2049).
+  ignore the recovery RNDIS interface (only matters if NM is running).
 
-Run `jetson-restore uninstall` to remove all of the above.
+NFS is **not** configured on the host. NVIDIA's flash container manages NFS
+itself via `--net host`, so a host-side `nfs-server` would collide on port 2049.
+Preflight will fail clearly if `nfs-server` is active — stop it first with
+`sudo systemctl stop nfs-server`.
+
+Run `jetson-restore uninstall` to remove the udev rule and NM keyfile.
 
 ## Recovery mode
 
@@ -123,9 +143,7 @@ board.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — two-layer design summary for
   contributors.
 - [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) — recovery mode, subnet
-  conflicts, USB autosuspend, NFS startup.
-- [`docs/superpowers/specs/2026-04-27-jetson-restore-design.md`](docs/superpowers/specs/2026-04-27-jetson-restore-design.md)
-  — full design spec.
+  conflicts, USB autosuspend, host-NFS collisions, AGX Orin dual-device flash.
 - [`CHANGELOG.md`](CHANGELOG.md) — release notes and pre-tag readiness
   checklist.
 

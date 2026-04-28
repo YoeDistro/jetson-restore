@@ -22,16 +22,8 @@ setup() {
     local actual expected
     # Pin only the `run` invocation; pre-checks (image exists/pull/build) are
     # validated separately in flash.bats.
-    actual="$(printf '%s' "${output}" | grep '^docker run' | sed "s|${JR_WORKDIR}|<WORKDIR>|g")"
+    actual="$(printf '%s' "${output}" | grep '^docker run' | sed "s|${JR_WORKDIR}|<WORKDIR>|g; s|${JR_REPO_ROOT}|<REPO>|g")"
     expected="$(cat "${JR_REPO_ROOT}/test/fixtures/expected-orin-nano-argv.txt")"
     assert_equal "${actual}" "${expected}"
 }
 
-@test "exports snippet for orin-nano matches expected-orin-nano-exports.txt" {
-    local rendered actual expected
-    rendered="$(sed "s|@JR_EXPORT_PATH@|${JR_WORKDIR}/Linux_for_Tegra|g" \
-                    "${JR_REPO_ROOT}/share/jetson-restore.exports.tmpl")"
-    actual="$(printf '%s' "${rendered}" | sed "s|${JR_WORKDIR}|<WORKDIR>|g")"
-    expected="$(cat "${JR_REPO_ROOT}/test/fixtures/expected-orin-nano-exports.txt")"
-    assert_equal "${actual}" "${expected}"
-}

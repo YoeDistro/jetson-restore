@@ -22,20 +22,25 @@ setup() {
     [[ "${output}" == *docker\ run\ --rm\ --privileged* ]]
     [[ "${output}" == *--net\ host* ]]
     [[ "${output}" == */dev/bus/usb:/dev/bus/usb* ]]
-    [[ "${output}" == *Linux_for_Tegra:/Linux_for_Tegra* ]]
+    [[ "${output}" == */run/udev:/run/udev:ro* ]]
+    [[ "${output}" == */run/rpcbind.sock:/run/rpcbind.sock* ]]
+    [[ "${output}" == *Linux_for_Tegra:${JR_WORKDIR}/Linux_for_Tegra* ]]
+    [[ "${output}" == *entrypoint.sh:/jr-entrypoint.sh:ro* ]]
+    [[ "${output}" == *--entrypoint\ /jr-entrypoint.sh* ]]
+    [[ "${output}" == *JR_LINUX_FOR_TEGRA=${JR_WORKDIR}/Linux_for_Tegra* ]]
+    [[ "${output}" == *-e\ USER=root* ]]
     [[ "${output}" == *jetson-orin-nano-devkit\ nvme* ]]
 }
 
-@test "do_flash uses the JR_CONTAINER_TAG from the jetpack config" {
-    JR_CONTAINER_TAG="6.2.1"
+@test "do_flash uses the JR_FLASH_IMAGE from the jetpack config" {
     do_flash
     jr_read_stub_log
-    [[ "${output}" == *:6.2.1* ]]
+    [[ "${output}" == *nvcr.io/nvidia/jetson-linux-flash-x86:r36.4* ]]
 }
 
-@test "do_flash builds the image locally when registry pull fails" {
-    # Replace the always-success docker stub: fail for 'image exists' (not
-    # present locally) and 'pull' (registry 403); succeed for build/run.
+@test "do_flash fails clearly if NVIDIA's image cannot be pulled" {
+    # Replace the always-success docker stub: fail 'image exists' (not local)
+    # and 'pull' (registry unreachable). do_flash should propagate the error.
     local stubs_active="${JR_TMPDIR}/stubs-active"
     rm -f "${stubs_active}/docker"
     cat >"${stubs_active}/docker" <<'STUB'
@@ -49,8 +54,6 @@ esac
 STUB
     chmod +x "${stubs_active}/docker"
 
-    do_flash
-    jr_read_stub_log
-    [[ "${output}" == *docker\ build\ -t\ ghcr.io/cbrake/jetson-restore:* ]]
-    [[ "${output}" == *docker\ run\ --rm* ]]
+    run do_flash
+    assert_failure
 }

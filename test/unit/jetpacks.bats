@@ -7,7 +7,7 @@ load ../helpers/load
         JR_JETPACK_VERSION JR_L4T_VERSION
         JR_BSP_URL JR_BSP_FILENAME
         JR_ROOTFS_URL JR_ROOTFS_FILENAME
-        JR_CONTAINER_TAG
+        JR_FLASH_IMAGE
     )
     for f in "${JR_REPO_ROOT}/jetpacks"/*.conf; do
         unset "${required[@]}"

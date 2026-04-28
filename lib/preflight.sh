@@ -22,6 +22,18 @@ _check_subnet_clear() {
     fi
 }
 
+# The container starts its own nfs-kernel-server via --net host, which
+# binds the host kernel's nfsd port. If the host already runs nfs-server
+# we'd collide on port 2049 and the container's restart would clobber
+# the host's exports. Fail clearly so the user can stop it first.
+_check_no_host_nfs() {
+    local state
+    state="$(systemctl is-active nfs-server 2>/dev/null || true)"
+    if [[ "${state}" == "active" ]]; then
+        log_die "host nfs-server is running; the container manages NFS itself and will collide on port 2049. Stop it first: 'sudo systemctl stop nfs-server' (also 'sudo systemctl disable nfs-server' if you don't want it to come back at boot)."
+    fi
+}
+
 _check_one_jetson_only() {
     local product_id="$1"
     local devices count
@@ -53,11 +65,8 @@ run_preflight() {
     log_info "preflight: disk space"
     _check_disk_space "${JR_WORKDIR}"
 
-    log_info "preflight: nfs-server"
-    ensure_nfs_server_running
-
-    log_info "preflight: nfs export"
-    install_nfs_export "${JR_REPO_ROOT}" "${JR_WORKDIR}/Linux_for_Tegra"
+    log_info "preflight: no conflicting host NFS server"
+    _check_no_host_nfs
 
     log_info "preflight: udev rule"
     install_udev_rule "${JR_REPO_ROOT}" "$(id -gn)"
