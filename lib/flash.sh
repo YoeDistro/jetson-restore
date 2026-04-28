@@ -29,10 +29,16 @@ do_flash() {
     _ensure_image "${runtime}" "${image}"
 
     log_info "running container ${image}"
+    # /run/udev is needed by l4t_initrd_flash.sh's container-awareness check:
+    # it calls `udevadm info` on each VID 0955 device and skips any whose
+    # DEVNAME isn't accessible. Without the host udev database mounted in,
+    # the lookup returns empty and the script silently reports "No devices
+    # to flash" even when the Jetson is plugged in and in recovery mode.
     "${runtime}" run --rm \
         --privileged \
         --net host \
         -v /dev/bus/usb:/dev/bus/usb \
+        -v /run/udev:/run/udev:ro \
         -v "${JR_WORKDIR}/Linux_for_Tegra:/Linux_for_Tegra" \
         "${image}" \
         "${JR_BOARD_ID}" "${JR_STORAGE}"
