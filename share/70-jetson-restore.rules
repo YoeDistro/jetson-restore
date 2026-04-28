@@ -3,3 +3,10 @@
 # Disable USB autosuspend for these devices to prevent mid-flash drops.
 SUBSYSTEM=="usb", ATTR{idVendor}=="0955", MODE="0660", GROUP="@JR_GROUP@", TAG+="uaccess"
 SUBSYSTEM=="usb", ATTR{idVendor}=="0955", ATTR{power/control}="on"
+
+# When the Jetson's initrd-recovery brings up its RNDIS gadget, the host's usb0
+# interface needs 192.168.55.1/24 so the Jetson can NFS-mount the rootfs during
+# the initrd flash (NVMe flow). NetworkManager-independent: this fires whenever
+# the kernel creates a usb0 net interface, regardless of which network manager
+# is running on the host.
+SUBSYSTEM=="net", ACTION=="add", KERNEL=="usb0", RUN+="/sbin/ip link set %k up", RUN+="/sbin/ip addr add 192.168.55.1/24 dev %k"
