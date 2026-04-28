@@ -15,7 +15,7 @@ Notable changes since plan:
 Initial release scope:
 
 - Targets: Orin Nano dev kit, AGX Orin dev kit.
-- Storage: NVMe.
+- Storage: NVMe (Orin Nano, AGX Orin) and eMMC (AGX Orin only).
 - JetPack 6.2.1 / L4T R36.4.4.
 - Stock NVIDIA L4T Ubuntu 22.04 sample rootfs.
 - Two-layer architecture: bash host wrapper + Ubuntu 22.04 container with NVIDIA's BSP toolchain.
